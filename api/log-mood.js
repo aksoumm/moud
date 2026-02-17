@@ -1,11 +1,8 @@
-// api/log-mood.js
-// Reçoit { date, mood, label } et commit dans data.json via GitHub API
-
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
-const GITHUB_OWNER  = process.env.GITHUB_OWNER;   // ton username
-const GITHUB_REPO   = process.env.GITHUB_REPO;    // "moud"
+const GITHUB_OWNER  = process.env.GITHUB_OWNER;
+const GITHUB_REPO   = process.env.GITHUB_REPO;
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
-const API_SECRET    = process.env.API_SECRET;      // clé secrète pour sécuriser l'endpoint
+const API_SECRET    = process.env.API_SECRET;
 
 const BASE = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
@@ -31,62 +28,56 @@ async function putFile(data, sha, message) {
       Accept: 'application/vnd.github.v3+json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      message,
-      content,
-      sha,
-      branch: GITHUB_BRANCH,
-    }),
+    body: JSON.stringify({ message, content, sha, branch: GITHUB_BRANCH }),
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`GitHub PUT failed: ${err}`);
-  }
+  if (!res.ok) throw new Error(`GitHub PUT failed: ${await res.text()}`);
   return res.json();
 }
 
-export default async function handler(req, res) {
-  // CORS pour GitHub Pages
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-secret');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Auth basique via header ou query param (pour les liens email)
-  const secret = req.headers['x-api-secret'] || req.query.secret;
-  if (API_SECRET && secret !== API_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // GET depuis un lien email
+  if (req.method === 'GET') {
+    const { date, mood, label, secret } = req.query;
+    if (API_SECRET && secret !== API_SECRET) return res.status(401).send('Unauthorized');
+    if (!date || !label) return res.status(400).send('Missing params');
+    try {
+      const { data, sha } = await getFile();
+      const idx = data.moods.findIndex(e => e.date === date);
+      const entry = { date, mood: Number(mood), label };
+      if (idx >= 0) data.moods[idx] = entry;
+      else { data.moods.push(entry); data.moods.sort((a,b) => a.date.localeCompare(b.date)); }
+      await putFile(data, sha, `mood: ${label} on ${date}`);
+      return res.redirect(302, `${process.env.APP_URL}?mood=${label}&date=${date}`);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send(err.message);
+    }
   }
+
+  if (req.method !== 'POST') return res.status(405).end();
+
+  const secret = req.headers['x-api-secret'] || req.query.secret;
+  if (API_SECRET && secret !== API_SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
   const { date, mood, label } = req.body || {};
   if (!date || !label) return res.status(400).json({ error: 'Missing date or label' });
 
   try {
     const { data, sha } = await getFile();
-
     const idx = data.moods.findIndex(e => e.date === date);
     const entry = { date, mood: Number(mood), label };
-
-    if (idx >= 0) {
-      data.moods[idx] = entry;
-    } else {
-      data.moods.push(entry);
-      data.moods.sort((a, b) => a.date.localeCompare(b.date));
-    }
-
+    if (idx >= 0) data.moods[idx] = entry;
+    else { data.moods.push(entry); data.moods.sort((a,b) => a.date.localeCompare(b.date)); }
     await putFile(data, sha, `mood: ${label} on ${date}`);
-
-    // Si appelé depuis un lien email → rediriger vers l'app
-    const isEmailClick = req.query.redirect !== undefined;
-    if (isEmailClick) {
-      return res.redirect(302, `/?mood=${label}&date=${date}`);
-    }
-
     return res.status(200).json({ ok: true, entry });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
-}
+};
