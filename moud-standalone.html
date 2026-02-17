@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#080612" />
+  <title>Moud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   MOUD — style
+   Direction: nocturne / doux / jouet organique
+───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080612;
+  --bg-2:      #100d20;
+  --surface:   #18142e;
+  --surface-2: #211d3a;
+  --border:    rgba(255,255,255,0.06);
+  --text:      #ede9ff;
+  --muted:     rgba(237,233,255,0.38);
+
+  --rad:    #ff4b8b;
+  --good:   #ffbe3d;
+  --meh:    #ff9f6b;
+  --bad:    #5bbde0;
+  --awful:  #9f70e8;
+
+  --nav-h:  68px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  --f-display: 'Unbounded', 'Arial Black', sans-serif;
+  --f-body:    'DM Sans', 'Helvetica Neue', sans-serif;
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --ease-out:    cubic-bezier(.2,0,.0,1);
+}
+
+html { height: 100%; background: var(--bg); overflow: hidden; }
+
+body {
+  height: 100%;
+  font-family: var(--f-body);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#bg-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; width: 100%; height: 100%;
+}
+
+/* ── NAV ── */
+.nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-h) + var(--safe-b));
+  padding-bottom: var(--safe-b);
+  z-index: 100;
+  display: flex; align-items: center; justify-content: space-around;
+  background: rgba(8,6,18,0.88);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-top: 1px solid var(--border);
+}
+
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none;
+  color: var(--muted);
+  font-family: var(--f-body); font-size: 10px; font-weight: 500;
+  letter-spacing: .04em;
+  cursor: pointer;
+  padding: 8px 20px; border-radius: 14px;
+  transition: color .2s, background .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-btn.active { color: var(--text); background: rgba(255,255,255,0.08); }
+.nav-btn svg { flex-shrink: 0; }
+
+/* ── VIEWS ── */
+.view {
+  position: fixed; inset: 0;
+  bottom: calc(var(--nav-h) + var(--safe-b));
+  z-index: 10;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s var(--ease-out);
+}
+.view.active { opacity: 1; pointer-events: all; }
+
+/* ── HOME ── */
+.home-wrap {
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px 20px 32px;
+  position: relative; z-index: 1;
+}
+
+.home-header { text-align: center; margin-bottom: 44px; }
+
+.home-date {
+  font-family: var(--f-body);
+  font-size: 11px; font-weight: 500;
+  color: var(--muted);
+  letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.home-title {
+  font-family: var(--f-display);
+  font-size: clamp(1.9rem, 8vw, 2.8rem);
+  font-weight: 900; line-height: 1.15;
+  color: var(--text);
+}
+.home-title em { font-style: italic; font-weight: 400; color: var(--good); }
+
+/* ── BLOB GRID ── */
+.blob-grid {
+  display: flex; gap: 12px;
+  align-items: flex-end; justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.blob-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  background: none; border: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .18s var(--ease-spring);
+  padding: 4px;
+}
+.blob-btn:active { transform: scale(.82) !important; }
+
+.blob-fig {
+  display: block;
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,.5));
+  transition: filter .22s;
+}
+.blob-btn:hover .blob-fig,
+.blob-btn.selected .blob-fig {
+  filter: drop-shadow(0 0 16px var(--glow, rgba(255,255,255,.3))) drop-shadow(0 4px 8px rgba(0,0,0,.4));
+}
+.blob-btn.selected { transform: translateY(-4px) scale(1.08); }
+
+.blob-lbl {
+  font-family: var(--f-body);
+  font-size: 10px; font-weight: 500;
+  color: var(--muted); letter-spacing: .06em;
+  transition: color .2s;
+}
+.blob-btn.selected .blob-lbl { color: var(--text); }
+
+.blob-btn:nth-child(1) { animation: blob-in .5s var(--ease-spring) .05s both; }
+.blob-btn:nth-child(2) { animation: blob-in .5s var(--ease-spring) .10s both; }
+.blob-btn:nth-child(3) { animation: blob-in .5s var(--ease-spring) .15s both; }
+.blob-btn:nth-child(4) { animation: blob-in .5s var(--ease-spring) .20s both; }
+.blob-btn:nth-child(5) { animation: blob-in .5s var(--ease-spring) .25s both; }
+
+@keyframes blob-in {
+  from { opacity:0; transform: translateY(28px) scale(.65); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* ── LOGGED ── */
+.logged-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  animation: fade-up .4s var(--ease-spring) both;
+}
+@keyframes fade-up {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.logged-blob { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.logged-hint { font-size: 12px; color: var(--muted); }
+
+/* ── BUTTONS ── */
+.pill-btn {
+  font-family: var(--f-body); font-size: 13px; font-weight: 500;
+  padding: 9px 22px; border-radius: 30px; border: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: all .18s;
+}
+.pill-btn.ghost {
+  background: rgba(255,255,255,.07); color: var(--muted);
+  border: 1px solid var(--border);
+}
+.pill-btn.ghost:active { background: rgba(255,255,255,.13); }
+.pill-btn.outline {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); flex: 1;
+}
+.pill-btn.outline:active { background: var(--surface-2); color: var(--text); }
+
+/* ── CALENDAR ── */
+.cal-wrap { padding: 16px 0 24px; position: relative; z-index: 1; }
+
+.cal-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px 16px;
+}
+.cal-month-label {
+  font-family: var(--f-display);
+  font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em;
+}
+.icon-btn {
+  width: 36px; height: 36px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
+}
+.icon-btn:active { background: var(--surface-2); }
+
+.cal-dow {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  padding: 0 10px; margin-bottom: 4px;
+}
+.cal-dow span {
+  text-align: center; font-size: 10px; font-weight: 600;
+  color: var(--muted); letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 0 6px;
+}
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  padding: 0 10px; gap: 2px;
+}
+.cal-cell {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 3px 1px 5px; border-radius: 10px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .12s; min-height: 52px;
+}
+.cal-cell:active:not(.future):not(.spacer) { background: rgba(255,255,255,.05); }
+.cal-cell.spacer, .cal-cell.future { cursor: default; }
+.cal-num {
+  font-size: 10px; font-weight: 500; color: var(--muted); line-height: 1; margin-top: 3px;
+}
+.cal-cell.is-today .cal-num { color: var(--rad); font-weight: 700; }
+
+/* ── STATS ── */
+.stats-wrap {
+  padding: 24px 18px 40px;
+  display: flex; flex-direction: column; gap: 14px;
+  position: relative; z-index: 1;
+}
+.stats-heading {
+  font-family: var(--f-display);
+  font-size: 1.55rem; font-weight: 900; letter-spacing: -.02em;
+}
+
+.arc-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 20px 16px 16px;
+  position: relative; display: flex; justify-content: center;
+}
+.arc-card svg { width: 100%; max-width: 240px; }
+.arc-center-label {
+  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none;
+}
+.arc-center-label strong {
+  display: block; font-family: var(--f-display);
+  font-size: 2rem; font-weight: 900; line-height: 1;
+}
+.arc-center-label span { font-size: 11px; color: var(--muted); display: block; margin-top: 3px; }
+
+.count-row {
+  display: flex; justify-content: space-around;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 16px 8px;
+}
+.count-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.count-num { font-family: var(--f-display); font-size: 1.05rem; font-weight: 700; }
+.count-lbl { font-size: 10px; color: var(--muted); }
+
+.cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 16px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+}
+.stat-icon { font-size: 1.4rem; }
+.stat-val { font-family: var(--f-display); font-size: 1.5rem; font-weight: 900; line-height: 1; margin-top: 4px; }
+.stat-lbl { font-size: 11px; color: var(--muted); }
+
+.weekday-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 18px 16px 14px;
+}
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px;
+}
+.weekday-bars { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+.wb-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; }
+.wb-track {
+  flex: 1; width: 100%; border-radius: 6px;
+  background: rgba(255,255,255,.05);
+  display: flex; align-items: flex-end; overflow: hidden;
+}
+.wb-fill { width: 100%; border-radius: 6px; min-height: 3px; transition: height .55s var(--ease-spring); }
+.wb-day { font-size: 9px; color: var(--muted); }
+
+.export-row { display: flex; gap: 10px; }
+
+.import-zone {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(159,112,232,.1); border: 1px solid rgba(159,112,232,.25);
+  color: rgba(159,112,232,.9);
+  font-family: var(--f-body); font-size: 13px; font-weight: 500;
+  padding: 14px; border-radius: 16px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: background .2s;
+}
+.import-zone:active { background: rgba(159,112,232,.2); }
+.import-status { font-size: 12px; color: var(--muted); text-align: center; min-height: 18px; }
+
+/* ── MODAL ── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex; align-items: flex-end;
+}
+.modal-sheet {
+  width: 100%; background: var(--surface);
+  border-radius: 28px 28px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 24px 48px;
+  animation: sheet-up .3s var(--ease-spring) both;
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.15); margin: 0 auto 20px;
+}
+.modal-date-lbl { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.modal-q { font-family: var(--f-display); font-size: 1.15rem; font-weight: 700; text-align: center; margin-bottom: 24px; }
+.modal-blobs { justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
+  left: 50%; transform: translateX(-50%) translateY(8px);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--f-body); font-size: 13px;
+  padding: 10px 22px; border-radius: 30px;
+  opacity: 0; transition: all .28s var(--ease-spring);
+  z-index: 300; white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" data-view="home">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M7.5 13.5 C8.5 15.5 13.5 15.5 14.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="8" cy="9.5" r="1" fill="currentColor"/>
+      <circle cx="14" cy="9.5" r="1" fill="currentColor"/>
+    </svg>
+    <span>Today</span>
+  </button>
+  <button class="nav-btn" data-view="calendar">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="2.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M7 2.5V6.5M15 2.5V6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M2.5 9.5H19.5" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="7" cy="13.5" r="1" fill="currentColor"/>
+      <circle cx="11" cy="13.5" r="1" fill="currentColor"/>
+      <circle cx="15" cy="13.5" r="1" fill="currentColor"/>
+    </svg>
+    <span>Calendar</span>
+  </button>
+  <button class="nav-btn" data-view="stats">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path d="M3 17 L7 11 L11 14 L15 7 L19 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>Stats</span>
+  </button>
+</nav>
+
+<!-- HOME -->
+<section class="view active" id="view-home">
+  <div class="home-wrap">
+    <header class="home-header">
+      <p class="home-date" id="home-date"></p>
+      <h1 class="home-title">How are<br><em>you</em> today?</h1>
+    </header>
+    <div class="blob-grid" id="blob-row"></div>
+    <div class="logged-wrap" id="home-today" style="display:none">
+      <div class="logged-blob" id="today-mood-display"></div>
+      <p class="logged-hint">Today's mood</p>
+      <button class="pill-btn ghost" id="change-btn">change ↩</button>
+    </div>
+  </div>
+</section>
+
+<!-- CALENDAR -->
+<section class="view" id="view-calendar">
+  <div class="cal-wrap">
+    <div class="cal-topbar">
+      <button class="icon-btn" id="cal-prev">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9L11 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 class="cal-month-label" id="cal-month-label"></h2>
+      <button class="icon-btn" id="cal-next">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 4L12 9L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="cal-dow">
+      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="view" id="view-stats">
+  <div class="stats-wrap">
+    <h2 class="stats-heading">Your Moud</h2>
+    <div class="arc-card">
+      <svg id="arc-svg" viewBox="0 0 220 120" fill="none"></svg>
+      <div class="arc-center-label">
+        <strong id="arc-count">0</strong>
+        <span>entries</span>
+      </div>
+    </div>
+    <div class="count-row" id="mood-count-row"></div>
+    <div class="cards-row">
+      <div class="stat-card">
+        <span class="stat-icon">🔥</span>
+        <strong class="stat-val" id="streak-val">0</strong>
+        <span class="stat-lbl">day streak</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✨</span>
+        <strong class="stat-val" id="best-day-val">—</strong>
+        <span class="stat-lbl">best weekday</span>
+      </div>
+    </div>
+    <div class="weekday-card">
+      <p class="card-title">Average by weekday</p>
+      <div class="weekday-bars" id="weekday-bars"></div>
+    </div>
+    <div class="export-row">
+      <button class="pill-btn outline" id="export-json">Export JSON</button>
+      <button class="pill-btn outline" id="export-csv">Export CSV</button>
+    </div>
+    <label class="import-zone" for="import-csv">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M4 6L8 2L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11V13H14V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Import Daylio CSV
+    </label>
+    <input type="file" id="import-csv" accept=".csv" style="display:none" />
+    <p class="import-status" id="import-status"></p>
+  </div>
+</section>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal" style="display:none">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <p class="modal-date-lbl" id="modal-date"></p>
+    <h3 class="modal-q">How did you feel?</h3>
+    <div class="blob-grid modal-blobs" id="modal-blob-row"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ── MOUD app.js ─────────────────────────────────── */
+
+const MOODS = [
+  { label:'rad',   score:5, color:'#ff4b8b', glow:'rgba(255,75,139,.5)'  },
+  { label:'good',  score:4, color:'#ffbe3d', glow:'rgba(255,190,61,.5)'  },
+  { label:'meh',   score:3, color:'#ff9f6b', glow:'rgba(255,159,107,.5)' },
+  { label:'bad',   score:2, color:'#5bbde0', glow:'rgba(91,189,224,.5)'  },
+  { label:'awful', score:1, color:'#9f70e8', glow:'rgba(159,112,232,.5)' },
+];
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let db = { moods: [] };
+let calYear, calMonth;
+
+/* ── UTILS ── */
+const todayStr = () => new Date().toISOString().slice(0,10);
+const byLabel  = l => MOODS.find(m => m.label === l);
+const byScore  = s => MOODS.find(m => m.score === s);
+const entry    = d => db.moods.find(e => e.date === d);
+
+function fmtDate(s) {
+  return new Date(s + 'T12:00:00').toLocaleDateString('en-US',
+    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+/* ── CANVAS BG ── */
+function initCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    stars = Array.from({ length: 60 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.4 + .3,
+      a: Math.random(),
+      da: (Math.random() * .006 + .002) * (Math.random() < .5 ? 1 : -1),
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W*.5, H*.3, 0, W*.5, H*.3, H*.9);
+    g.addColorStop(0, 'rgba(50,20,100,.4)');
+    g.addColorStop(1, 'rgba(8,6,18,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    stars.forEach(s => {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220,210,255,${s.a * .7})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize(); draw();
+}
+
+/* ── BLOB SVG ── */
+function blobPath(cx, cy, rx, ry) {
+  const kx = rx * .6, ky = ry * .55;
+  return `M ${cx},${cy-ry} C ${cx+kx},${cy-ry} ${cx+rx},${cy-ky} ${cx+rx},${cy} C ${cx+rx},${cy+ky} ${cx+kx*1.1},${cy+ry*.95} ${cx},${cy+ry} C ${cx-kx*1.1},${cy+ry*.95} ${cx-rx},${cy+ky} ${cx-rx},${cy} C ${cx-rx},${cy-ky} ${cx-kx},${cy-ry} ${cx},${cy-ry} Z`;
+}
+
+const FACES = {
+  rad: (cx,cy,s) => `
+    <circle cx="${cx-s*.22}" cy="${cy-s*.1}" r="${s*.072}" fill="#1a0a12"/>
+    <circle cx="${cx+s*.22}" cy="${cy-s*.1}" r="${s*.072}" fill="#1a0a12"/>
+    <path d="M${cx-s*.32} ${cy+s*.08} Q${cx} ${cy+s*.38} ${cx+s*.32} ${cy+s*.08}" stroke="#1a0a12" stroke-width="${s*.08}" fill="#1a0a12" stroke-linecap="round"/>`,
+  good: (cx,cy,s) => `
+    <circle cx="${cx-s*.22}" cy="${cy-s*.08}" r="${s*.065}" fill="#1a0a12"/>
+    <circle cx="${cx+s*.22}" cy="${cy-s*.08}" r="${s*.065}" fill="#1a0a12"/>
+    <path d="M${cx-s*.28} ${cy+s*.14} Q${cx} ${cy+s*.34} ${cx+s*.28} ${cy+s*.14}" stroke="#1a0a12" stroke-width="${s*.07}" fill="none" stroke-linecap="round"/>`,
+  meh: (cx,cy,s) => `
+    <circle cx="${cx-s*.22}" cy="${cy-s*.06}" r="${s*.065}" fill="#1a0a12"/>
+    <circle cx="${cx+s*.22}" cy="${cy-s*.06}" r="${s*.065}" fill="#1a0a12"/>
+    <line x1="${cx-s*.25}" y1="${cy+s*.18}" x2="${cx+s*.25}" y2="${cy+s*.18}" stroke="#1a0a12" stroke-width="${s*.07}" stroke-linecap="round"/>`,
+  bad: (cx,cy,s) => `
+    <path d="M${cx-s*.28} ${cy-s*.1} Q${cx-s*.2} ${cy-s*.18} ${cx-s*.12} ${cy-s*.1}" stroke="#0d1f2a" stroke-width="${s*.065}" fill="none" stroke-linecap="round"/>
+    <path d="M${cx+s*.12} ${cy-s*.1} Q${cx+s*.2} ${cy-s*.18} ${cx+s*.28} ${cy-s*.1}" stroke="#0d1f2a" stroke-width="${s*.065}" fill="none" stroke-linecap="round"/>
+    <path d="M${cx-s*.26} ${cy+s*.22} Q${cx} ${cy+s*.08} ${cx+s*.26} ${cy+s*.22}" stroke="#0d1f2a" stroke-width="${s*.07}" fill="none" stroke-linecap="round"/>`,
+  awful: (cx,cy,s) => `
+    <line x1="${cx-s*.3}" y1="${cy-s*.18}" x2="${cx-s*.14}" y2="${cy-s*.02}" stroke="#1a0a2a" stroke-width="${s*.07}" stroke-linecap="round"/>
+    <line x1="${cx-s*.14}" y1="${cy-s*.18}" x2="${cx-s*.3}" y2="${cy-s*.02}" stroke="#1a0a2a" stroke-width="${s*.07}" stroke-linecap="round"/>
+    <line x1="${cx+s*.14}" y1="${cy-s*.18}" x2="${cx+s*.3}" y2="${cy-s*.02}" stroke="#1a0a2a" stroke-width="${s*.07}" stroke-linecap="round"/>
+    <line x1="${cx+s*.3}" y1="${cy-s*.18}" x2="${cx+s*.14}" y2="${cy-s*.02}" stroke="#1a0a2a" stroke-width="${s*.07}" stroke-linecap="round"/>
+    <path d="M${cx-s*.26} ${cy+s*.22} Q${cx} ${cy+s*.08} ${cx+s*.26} ${cy+s*.22}" stroke="#1a0a2a" stroke-width="${s*.07}" fill="none" stroke-linecap="round"/>`,
+};
+
+function makeBlobSVG(mood, size, color, glow) {
+  const cx = size/2, cy = size/2, rx = size*.42, ry = size*.44;
+  return `<svg class="blob-fig" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="--glow:${glow||'rgba(255,255,255,.3)'}" fill="none">
+    <path d="${blobPath(cx,cy,rx,ry)}" fill="${color}"/>
+    ${(FACES[mood]||FACES.good)(cx,cy,size)}
+  </svg>`;
+}
+
+function makeEmptySVG(size, op=.07) {
+  const cx=size/2,cy=size/2,rx=size*.42,ry=size*.44;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none"><path d="${blobPath(cx,cy,rx,ry)}" fill="rgba(255,255,255,${op})"/></svg>`;
+}
+
+function buildBlobRow(container, size, selectedLabel, onPick) {
+  container.innerHTML = '';
+  MOODS.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'blob-btn' + (selectedLabel === m.label ? ' selected' : '');
+    btn.style.setProperty('--glow', m.glow);
+    btn.innerHTML = makeBlobSVG(m.label, size, m.color, m.glow) + `<span class="blob-lbl">${m.label}</span>`;
+    btn.addEventListener('click', () => onPick(m));
+    container.appendChild(btn);
+  });
+}
+
+/* ── DATA ── */
+async function loadData() {
+  // En mode standalone local, on tente de charger data.json
+  // Si pas dispo, on part d'un db vide (normal en local sans serveur)
+  try {
+    const r = await fetch('./data.json?t=' + Date.now());
+    if (r.ok) db = await r.json();
+  } catch { db = { moods: [] }; }
+}
+
+async function saveMood(date, label) {
+  const score = byLabel(label)?.score; if (!score) return;
+  const idx = db.moods.findIndex(e => e.date === date);
+  const obj = { date, mood: score, label };
+  if (idx >= 0) db.moods[idx] = obj;
+  else { db.moods.push(obj); db.moods.sort((a,b) => a.date.localeCompare(b.date)); }
+  try {
+    const r = await fetch('/api/log-mood', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(obj),
+    });
+    if (r.ok) toast('Saved ✓');
+    else throw new Error();
+  } catch {
+    localStorage.setItem('moud_pending', JSON.stringify(db));
+    toast('Saved locally');
+  }
+}
+
+/* ── NAV ── */
+function initNav() {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-' + v).classList.add('active');
+      if (v === 'calendar') renderCalendar();
+      if (v === 'stats')    renderStats();
+    });
+  });
+}
+
+/* ── HOME ── */
+function renderHome() {
+  const t = todayStr();
+  document.getElementById('home-date').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long' });
+
+  const e = entry(t);
+  const blobRow    = document.getElementById('blob-row');
+  const loggedWrap = document.getElementById('home-today');
+
+  if (e) {
+    blobRow.style.display    = 'none';
+    loggedWrap.style.display = 'flex';
+    const m = byLabel(e.label);
+    document.getElementById('today-mood-display').innerHTML =
+      makeBlobSVG(m.label, 96, m.color, m.glow) +
+      `<span class="blob-lbl" style="font-size:14px">${m.label}</span>`;
+    document.getElementById('change-btn').onclick = () => {
+      loggedWrap.style.display = 'none';
+      blobRow.style.display    = 'flex';
+      buildBlobRow(blobRow, 54, e?.label, async m => { await saveMood(t, m.label); renderHome(); });
+    };
+  } else {
+    loggedWrap.style.display = 'none';
+    blobRow.style.display    = 'flex';
+    buildBlobRow(blobRow, 54, null, async m => { await saveMood(t, m.label); renderHome(); });
+  }
+}
+
+/* ── CALENDAR ── */
+function renderCalendar() {
+  const now = new Date();
+  if (calYear === undefined) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+  document.getElementById('cal-month-label').textContent =
+    new Date(calYear, calMonth, 1).toLocaleDateString('en-US', { month:'long', year:'numeric' });
+
+  const firstDow    = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const t           = todayStr();
+  const grid        = document.getElementById('cal-grid');
+  grid.innerHTML    = '';
+
+  for (let i = 0; i < firstDow; i++) {
+    const sp = document.createElement('div'); sp.className = 'cal-cell spacer'; grid.appendChild(sp);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const e  = entry(ds);
+    const isToday  = ds === t;
+    const isFuture = ds > t;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isToday ? ' is-today' : '') + (isFuture ? ' future' : '');
+
+    if (isFuture) {
+      cell.innerHTML = makeEmptySVG(32, .04) + `<span class="cal-num">${d}</span>`;
+    } else if (e) {
+      const m = byLabel(e.label);
+      cell.innerHTML = makeBlobSVG(m.label, 32, m.color, m.glow) + `<span class="cal-num">${d}</span>`;
+      cell.addEventListener('click', () => openModal(ds, e));
+    } else {
+      cell.innerHTML = makeEmptySVG(32, .07) + `<span class="cal-num">${d}</span>`;
+      cell.addEventListener('click', () => openModal(ds, null));
+    }
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  const n = new Date();
+  if (calYear === n.getFullYear() && calMonth === n.getMonth()) return;
+  calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar();
+});
+
+/* ── MODAL ── */
+function openModal(ds, e) {
+  document.getElementById('modal-date').textContent = fmtDate(ds);
+  document.getElementById('modal').style.display = 'flex';
+  buildBlobRow(document.getElementById('modal-blob-row'), 48, e?.label, async m => {
+    await saveMood(ds, m.label); closeModal(); renderCalendar(); renderHome();
+  });
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+/* ── STATS ── */
+function renderStats() {
+  const total = db.moods.length;
+  document.getElementById('arc-count').textContent = total;
+  const counts = {}; MOODS.forEach(m => counts[m.label] = 0);
+  db.moods.forEach(e => { if (counts[e.label] !== undefined) counts[e.label]++; });
+  drawArc(counts, total); drawCountRow(counts);
+  document.getElementById('streak-val').textContent  = calcStreak();
+  document.getElementById('best-day-val').textContent = bestWeekday();
+  drawWeekdayBars();
+}
+
+function drawArc(counts, total) {
+  const svg = document.getElementById('arc-svg');
+  svg.innerHTML = '';
+  const cx=110, cy=105, R=84, sw=18, half=Math.PI*R;
+  const mkPath = () => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg','path');
+    el.setAttribute('d', `M${cx-R},${cy} A${R},${R} 0 0,1 ${cx+R},${cy}`);
+    el.setAttribute('fill','none'); return el;
+  };
+  const bg = mkPath();
+  bg.setAttribute('stroke','rgba(255,255,255,.06)');
+  bg.setAttribute('stroke-width', sw);
+  bg.setAttribute('stroke-linecap','round');
+  svg.appendChild(bg);
+  if (!total) return;
+  let offset = 0;
+  [...MOODS].reverse().forEach(m => {
+    const len = (counts[m.label]/total) * half; if (len < 1) return;
+    const seg = mkPath();
+    seg.setAttribute('stroke', m.color);
+    seg.setAttribute('stroke-width', sw);
+    seg.setAttribute('stroke-linecap','round');
+    seg.setAttribute('stroke-dasharray', `${half}`);
+    seg.setAttribute('stroke-dashoffset', `${half - len}`);
+    seg.setAttribute('transform', `rotate(${(offset/half)*180}, ${cx}, ${cy})`);
+    svg.appendChild(seg); offset += len;
+  });
+}
+
+function drawCountRow(counts) {
+  const row = document.getElementById('mood-count-row'); row.innerHTML = '';
+  MOODS.forEach(m => {
+    const item = document.createElement('div'); item.className = 'count-item';
+    item.innerHTML = makeBlobSVG(m.label,30,m.color,m.glow)
+      + `<span class="count-num" style="color:${m.color}">${counts[m.label]}</span>`
+      + `<span class="count-lbl">${m.label}</span>`;
+    row.appendChild(item);
+  });
+}
+
+function calcStreak() {
+  if (!db.moods.length) return 0;
+  const dates = new Set(db.moods.map(e => e.date));
+  let streak = 0, d = new Date();
+  if (!dates.has(todayStr())) d.setDate(d.getDate()-1);
+  while (true) {
+    const s = d.toISOString().slice(0,10);
+    if (!dates.has(s)) break; streak++; d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+function bestWeekday() {
+  const sums = Array(7).fill(0), counts = Array(7).fill(0);
+  db.moods.forEach(e => { const dow = new Date(e.date+'T12:00:00').getDay(); sums[dow]+=e.mood; counts[dow]++; });
+  let best=-1, bestIdx=-1;
+  sums.forEach((s,i) => { if (!counts[i]) return; const avg=s/counts[i]; if(avg>best){best=avg;bestIdx=i;} });
+  return bestIdx >= 0 ? DAYS[bestIdx] : '—';
+}
+
+function drawWeekdayBars() {
+  const sums=Array(7).fill(0), counts=Array(7).fill(0);
+  db.moods.forEach(e => { const dow=new Date(e.date+'T12:00:00').getDay(); sums[dow]+=e.mood; counts[dow]++; });
+  const avgs = sums.map((s,i) => counts[i] ? s/counts[i] : 0);
+  const container = document.getElementById('weekday-bars'); container.innerHTML='';
+  DAYS.forEach((day,i) => {
+    const pct = avgs[i]/5;
+    const m = byScore(Math.round(avgs[i]));
+    const color = m ? m.color : 'rgba(255,255,255,.1)';
+    const col = document.createElement('div'); col.className='wb-col';
+    col.innerHTML=`<div class="wb-track"><div class="wb-fill" style="height:${pct*100}%;background:${color}"></div></div><span class="wb-day">${day[0]}</span>`;
+    container.appendChild(col);
+  });
+}
+
+/* ── EXPORT ── */
+document.getElementById('export-json').addEventListener('click', () => {
+  dl(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),'moud-data.json');
+});
+document.getElementById('export-csv').addEventListener('click', () => {
+  let csv='date,mood_score,mood_label\n';
+  db.moods.forEach(e => { csv+=`${e.date},${e.mood},${e.label}\n`; });
+  dl(new Blob([csv],{type:'text/csv'}),'moud-data.csv');
+});
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
+
+/* ── IMPORT DAYLIO ── */
+document.getElementById('import-csv').addEventListener('change', async e => {
+  const file=e.target.files[0]; if(!file) return;
+  const text=await file.text();
+  const lines=text.split('\n').filter(Boolean);
+  const header=lines[0].split(',');
+  const fi=header.indexOf('full_date'), mi=header.indexOf('mood');
+  if(fi<0||mi<0){ document.getElementById('import-status').textContent='⚠️ Invalid CSV'; return; }
+  const VALID=new Set(['rad','good','meh','bad','awful']);
+  let n=0;
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',');
+    const date=cols[fi]?.trim().replace(/"/g,'');
+    const label=cols[mi]?.trim().replace(/"/g,'');
+    if(!date||!VALID.has(label)) continue;
+    const idx=db.moods.findIndex(e=>e.date===date);
+    const obj={date,mood:byLabel(label).score,label};
+    if(idx>=0) db.moods[idx]=obj; else db.moods.push(obj); n++;
+  }
+  db.moods.sort((a,b)=>a.date.localeCompare(b.date));
+  try {
+    await fetch('/api/import-moods',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+  } catch { localStorage.setItem('moud_pending',JSON.stringify(db)); }
+  document.getElementById('import-status').textContent=`✅ ${n} entries imported`;
+  toast(`${n} entries imported`); renderHome(); renderStats();
+});
+
+/* ── INIT ── */
+async function init() { initCanvas(); initNav(); await loadData(); renderHome(); }
+init();
+</script>
+</body>
+</html>
