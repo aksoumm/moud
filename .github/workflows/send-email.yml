@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Trigger send-email Vercel Function
         run: |
-          curl -s -X POST "${{ secrets.API_URL }}/api/send-email" \
+          curl -s -L -X POST "https://aksoum-moud.vercel.app/api/send-email" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             --fail
